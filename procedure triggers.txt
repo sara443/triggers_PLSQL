@@ -1,0 +1,39 @@
+create or replace procedure triseq
+
+is 
+        cursor data1_cursor IS
+            select UC.TABLE_NAME, UCC.COLUMN_NAME
+            from user_cons_columns UCC, user_constraints UC
+            WHERE UCC.CONSTRAINT_NAME = UC.CONSTRAINT_NAME
+            and UC.CONSTRAINT_TYPE = 'P'
+            and UCC.COLUMN_NAME in (select column_name  from user_tab_columns where data_type = 'NUMBER');
+                    
+begin
+        FOR data1_record IN data1_cursor LOOP
+
+             EXECUTE IMMEDIATE 'CREATE SEQUENCE '||data1_record.TABLE_NAME||'_1SEQ
+                                              START WITH 1
+                                              INCREMENT BY 1
+                                              MAXVALUE 99999999
+                                              MINVALUE 1';
+                                                     
+             EXECUTE IMMEDIATE 'CREATE OR REPLACE TRIGGER '||data1_record.table_name||'_1TRG
+                                              BEFORE INSERT 
+                                              ON '||data1_record.table_name||'
+                                              FOR EACH ROW
+                                              BEGIN
+                                                 :new.'||data1_record.column_name||' := '||data1_record.table_name||'_1SEQ.nextval;
+                                              END;';                                                     
+        END LOOP;
+end;
+
+____________
+
+declare 
+
+begin 
+
+triseq;
+
+
+end;
